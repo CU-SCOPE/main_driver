@@ -130,7 +130,7 @@ int SCOPE::test2() {
 
 int SCOPE::acquire() {
 	std::string acq_sem = "/acq_sem";
-	std::string acq_name = "/home/zach/Documents/senior_projects/main_driver/src/test.py";
+	std::string acq_name = "../src/test.py";
 	if(create_process(acq_name, acq_sem, &acquireSem, NULL)) {
 		fprintf(stderr, "create_process error\n");
 		exit(1);
@@ -144,7 +144,7 @@ int SCOPE::acquire() {
 
 int SCOPE::track() {
 	std::string trck_sem = "/trck_sem";
-	std::string trck_name = "/home/zach/Documents/senior_projects/main_driver/src/test.py";
+	std::string trck_name = "../src/test.py";
 	int trck_pipe[2];
 	char_to_float raw_bytes;
 	if(create_process(trck_name, trck_sem, &trackSem, trck_pipe)) {
