@@ -165,6 +165,8 @@ int SCOPE::track() {
 int SCOPE::orientation() {
 	pid_t pid;
 	std::string ornt_name = "pcExe";
+	printf("Enter initial position: ");
+	std::cin >> initialPosition;
 	if(create_process(ornt_name, "", NULL, NULL)) {
 		fprintf(stderr, "create_process error\n");
 		exit(1);
