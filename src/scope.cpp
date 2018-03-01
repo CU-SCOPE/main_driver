@@ -31,7 +31,7 @@ pid_t Fork(void) {
 void child_handler(int sig) {
 	pid_t pid;
 	while ((pid = waitpid(-1, NULL, 0)) > 0)
-	if (errno != ECHILD) {
+	if (errno == ECHILD) {
 		fprintf(stderr, "waitpid error: %s\n", strerror(errno));
 		exit(1);
 	}
@@ -48,8 +48,7 @@ SCOPE::SCOPE() {
 }
 
 SCOPE::~SCOPE() {
-	sem_close(acquireSem);
-	sem_close(trackSem);
+
 }
 
 void SCOPE::run() {
@@ -131,9 +130,9 @@ int SCOPE::test2() {
 }
 
 int SCOPE::acquire() {
-	std::string acq_sem = "acq_sem";
-	std::string acq_name = "acq_name";
-	if(create_process(acq_name, acq_sem, acquireSem)) {
+	std::string acq_sem = "/acq_sem";
+	std::string acq_name = "test.py";
+	if(create_process(acq_name, acq_sem, &acquireSem)) {
 		fprintf(stderr, "create_process error\n");
 		exit(1);
 	}
@@ -141,20 +140,22 @@ int SCOPE::acquire() {
 		fprintf(stderr, "sem_wait error: %s\n", strerror(errno));
 		exit(1);
 	}
+	sem_close(acquireSem);
 	return 0;
 }
 
 int SCOPE::track() {
-	std::string trck_sem = "trck_sem";
-	std::string trck_name = "trck_name";
-	if(create_process(trck_name, trck_sem, acquireSem)) {
+	std::string trck_sem = "/trck_sem";
+	std::string trck_name = "test.py";
+	if(create_process(trck_name, trck_sem, &trackSem)) {
 		fprintf(stderr, "create_process error\n");
 		exit(1);
 	}
-	if(sem_wait(acquireSem)) {
+	if(sem_wait(trackSem)) {
 		fprintf(stderr, "sem_wait error: %s\n", strerror(errno));
 		exit(1);
 	}
+	sem_close(trackSem);
 	return 0;
 }
 
@@ -170,14 +171,14 @@ int SCOPE::orientation() {
 	return 0;
 }
 
-int SCOPE::create_process(std::string exeName, std::string semName, sem_t *sem) {
+int SCOPE::create_process(std::string exeName, std::string semName, sem_t **sem) {
 	pid_t pid;
 	char *exe = strdup(exeName.c_str());
 	char *name = strdup(semName.c_str());
 	char *const command[3] = {exe, name, NULL};
 	// Initialize semaphore between parent/child
 	if(!semName.empty()) {
-		sem = sem_open(semName.c_str(), O_CREAT, 0);
+		*sem = sem_open(semName.c_str(), O_CREAT, 0644, 0);
 	}
 
 	if(!(pid = Fork())) {

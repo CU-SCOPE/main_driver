@@ -15,7 +15,7 @@ public:
 	int track();
 	int orientation();
 private:
-	int create_process(std::string exeName, std::string semName, sem_t *sem);
+	int create_process(std::string exeName, std::string semName, sem_t **sem);
 	sem_t *acquireSem;
 	sem_t *trackSem;
 };
