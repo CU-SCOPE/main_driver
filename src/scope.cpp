@@ -31,10 +31,6 @@ pid_t Fork(void) {
 void child_handler(int sig) {
 	pid_t pid;
 	while ((pid = waitpid(-1, NULL, 0)) > 0)
-	if (errno == ECHILD) {
-		fprintf(stderr, "waitpid error: %s\n", strerror(errno));
-		exit(1);
-	}
 	return;
 }
 
@@ -48,7 +44,10 @@ SCOPE::SCOPE() {
 }
 
 SCOPE::~SCOPE() {
-
+	if(acquireSem)
+		sem_close(acquireSem);
+	if(trackSem)
+	sem_close(trackSem);
 }
 
 void SCOPE::run() {
@@ -140,7 +139,6 @@ int SCOPE::acquire() {
 		fprintf(stderr, "sem_wait error: %s\n", strerror(errno));
 		exit(1);
 	}
-	sem_close(acquireSem);
 	return 0;
 }
 
@@ -155,7 +153,6 @@ int SCOPE::track() {
 		fprintf(stderr, "sem_wait error: %s\n", strerror(errno));
 		exit(1);
 	}
-	sem_close(trackSem);
 	return 0;
 }
 
