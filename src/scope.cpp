@@ -47,7 +47,7 @@ SCOPE::~SCOPE() {
 	if(acquireSem)
 		sem_close(acquireSem);
 	if(trackSem)
-	sem_close(trackSem);
+		sem_close(trackSem);
 }
 
 void SCOPE::run() {
