@@ -188,7 +188,6 @@ int SCOPE::create_process(std::string exeName, std::string semName, sem_t **sem,
 			fprintf(stderr, "snprintf error: %s\n", strerror(errno));
 			exit(1);
 		}
-		printf("%s\n", options);
 	}
 
 	// Initialize Pipe for passing data back to main program
