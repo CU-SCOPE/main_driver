@@ -131,7 +131,7 @@ int SCOPE::test2() {
 int SCOPE::acquire() {
 	std::string acq_sem = "/acq_sem";
 	std::string acq_name = "test.py";
-	if(create_process(acq_name, acq_sem, &acquireSem)) {
+	if(create_process(acq_name, acq_sem, &acquireSem, NULL)) {
 		fprintf(stderr, "create_process error\n");
 		exit(1);
 	}
@@ -145,7 +145,9 @@ int SCOPE::acquire() {
 int SCOPE::track() {
 	std::string trck_sem = "/trck_sem";
 	std::string trck_name = "test.py";
-	if(create_process(trck_name, trck_sem, &trackSem)) {
+	int trck_pipe[2];
+	char_to_float raw_bytes;
+	if(create_process(trck_name, trck_sem, &trackSem, trck_pipe)) {
 		fprintf(stderr, "create_process error\n");
 		exit(1);
 	}
@@ -153,13 +155,17 @@ int SCOPE::track() {
 		fprintf(stderr, "sem_wait error: %s\n", strerror(errno));
 		exit(1);
 	}
+	close(trck_pipe[1]);
+	read_position(trck_pipe[0], raw_bytes.buff);
+	initialPosition = raw_bytes.f;
+	printf("Initial Position: %f\n", initialPosition);
 	return 0;
 }
 
 int SCOPE::orientation() {
 	pid_t pid;
 	std::string ornt_name = "pcExe";
-	if(create_process(ornt_name, "", NULL)) {
+	if(create_process(ornt_name, "", NULL, NULL)) {
 		fprintf(stderr, "create_process error\n");
 		exit(1);
 	}
@@ -168,15 +174,24 @@ int SCOPE::orientation() {
 	return 0;
 }
 
-int SCOPE::create_process(std::string exeName, std::string semName, sem_t **sem) {
+int SCOPE::create_process(std::string exeName, std::string semName, sem_t **sem, int *filedes) {
 	pid_t pid;
 	char *exe = strdup(exeName.c_str());
 	char *name = strdup(semName.c_str());
-	char *const command[3] = {exe, name, NULL};
+	char *pipeout = NULL;
 	// Initialize semaphore between parent/child
 	if(!semName.empty()) {
 		*sem = sem_open(semName.c_str(), O_CREAT, 0644, 0);
 	}
+	// Initialize Pipe for passing data back to main program
+	if(filedes) {
+		if(pipe(filedes)) {
+			fprintf (stderr, "Pipe failed.\n");
+			exit(1);
+		}
+		pipeout = strdup(std::to_string(filedes[1]).c_str());
+	}
+	char *const command[4] = {exe, name, pipeout, NULL};
 
 	if(!(pid = Fork())) {
 		printf("%s\n", exeName.c_str());
@@ -185,4 +200,12 @@ int SCOPE::create_process(std::string exeName, std::string semName, sem_t **sem)
 		}
 	}
 	return 0;
+}
+
+void SCOPE::read_position(int file, char *buff) {
+	FILE *stream;
+	stream = fdopen (file, "r");
+	while ((*buff = fgetc(stream)) != EOF)
+		++buff;
+	fclose (stream);
 }

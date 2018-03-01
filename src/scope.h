@@ -4,6 +4,11 @@
 #include <semaphore.h>
 #include <string>
 
+union char_to_float {
+    float f;
+    char buff[sizeof(float)];
+};
+
 class SCOPE {
 public:
 	SCOPE();
@@ -15,7 +20,9 @@ public:
 	int track();
 	int orientation();
 private:
-	int create_process(std::string exeName, std::string semName, sem_t **sem);
+	int create_process(std::string exeName, std::string semName, sem_t **sem, int *filedes);
+	void read_position(int file, char *buff);
+	float initialPosition;
 	sem_t *acquireSem;
 	sem_t *trackSem;
 };
