@@ -55,7 +55,7 @@ void SCOPE::run() {
 	printf("Starting SCOPE\n");
 	// Main Loop
 	while(1) {
-		printf("Choose Command: \n\n");
+		printf("\nChoose from the following commands: \n\n");
 		printf("'t1' - Start test 1\n");
 		printf("'t2' - Start test 2\n");
 		printf("'a'  - Start acquire phase only\n");
@@ -177,12 +177,20 @@ int SCOPE::orientation() {
 int SCOPE::create_process(std::string exeName, std::string semName, sem_t **sem, int *filedes) {
 	pid_t pid;
 	char *exe = strdup(exeName.c_str());
-	char *name = strdup(semName.c_str());
+	char *options = strdup(semName.c_str());
 	char *pipeout = NULL;
 	// Initialize semaphore between parent/child
 	if(!semName.empty()) {
 		*sem = sem_open(semName.c_str(), O_CREAT, 0644, 0);
+	} else {
+		options = new char[64];
+		if(snprintf(options, 64, "%f", initialPosition) < 0) {
+			fprintf(stderr, "snprintf error: %s\n", strerror(errno));
+			exit(1);
+		}
+		printf("%s\n", options);
 	}
+
 	// Initialize Pipe for passing data back to main program
 	if(filedes) {
 		if(pipe(filedes)) {
@@ -191,7 +199,7 @@ int SCOPE::create_process(std::string exeName, std::string semName, sem_t **sem,
 		}
 		pipeout = strdup(std::to_string(filedes[1]).c_str());
 	}
-	char *const command[4] = {exe, name, pipeout, NULL};
+	char *const command[4] = {exe, options, pipeout, NULL};
 
 	if(!(pid = Fork())) {
 		printf("%s\n", exeName.c_str());
@@ -199,6 +207,7 @@ int SCOPE::create_process(std::string exeName, std::string semName, sem_t **sem,
 			printf("failure\n");
 		}
 	}
+	delete[] options;
 	return 0;
 }
 

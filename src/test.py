@@ -11,7 +11,7 @@ semaphore = posix_ipc.Semaphore(sem_name)
 
 if(len(sys.argv) > 2):
 	pipeout = int(sys.argv[2])
-	print(bytes(struct.pack("f", 3.14)))
+	print("raw float bytes:", bytes(struct.pack("f", 3.14)))
 	os.write(pipeout, bytes(struct.pack("f", 3.14)))
 
 print("release semaphore to give control to main program")
