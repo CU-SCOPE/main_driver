@@ -20,7 +20,7 @@ public:
 	int track();
 	int orientation();
 private:
-	int create_process(std::string exeName, std::string semName, sem_t **sem, int *filedes);
+	int create_process(std::string exeName, std::string options, sem_t **sem, int *filedes);
 	void read_position(int file, char *buff);
 	float initialPosition;
 	sem_t *acquireSem;

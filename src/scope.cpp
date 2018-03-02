@@ -40,7 +40,7 @@ SCOPE::SCOPE() {
 		fprintf(stderr, "signal error: %s\n", strerror(errno));
 		exit(1);
 	}
-
+	initialPosition = 0.0;
 }
 
 SCOPE::~SCOPE() {
@@ -139,6 +139,7 @@ int SCOPE::acquire() {
 		fprintf(stderr, "sem_wait error: %s\n", strerror(errno));
 		exit(1);
 	}
+	sem_close(acquireSem);
 	return 0;
 }
 
@@ -159,15 +160,19 @@ int SCOPE::track() {
 	read_position(trck_pipe[0], raw_bytes.buff);
 	initialPosition = raw_bytes.f;
 	printf("Initial Position: %f\n", initialPosition);
+	sem_close(trackSem);
 	return 0;
 }
 
 int SCOPE::orientation() {
 	pid_t pid;
 	std::string ornt_name = "pcExe";
-	printf("Enter initial position: ");
-	std::cin >> initialPosition;
-	if(create_process(ornt_name, "", NULL, NULL)) {
+	// Get initial position from user if unkown
+	if(initialPosition == 0.0) {
+		printf("Enter initial position: ");
+		std::cin >> initialPosition;
+	}
+	if(create_process(ornt_name, std::to_string(initialPosition), NULL, NULL)) {
 		fprintf(stderr, "create_process error\n");
 		exit(1);
 	}
@@ -176,20 +181,14 @@ int SCOPE::orientation() {
 	return 0;
 }
 
-int SCOPE::create_process(std::string exeName, std::string semName, sem_t **sem, int *filedes) {
+int SCOPE::create_process(std::string exeName, std::string options, sem_t **sem, int *filedes) {
 	pid_t pid;
 	char *exe = strdup(exeName.c_str());
-	char *options = strdup(semName.c_str());
+	char *cmd = strdup(options.c_str());
 	char *pipeout = NULL;
 	// Initialize semaphore between parent/child
-	if(!semName.empty()) {
-		*sem = sem_open(semName.c_str(), O_CREAT, 0644, 0);
-	} else {
-		options = new char[64];
-		if(snprintf(options, 64, "%f", initialPosition) < 0) {
-			fprintf(stderr, "snprintf error: %s\n", strerror(errno));
-			exit(1);
-		}
+	if(sem) {
+		*sem = sem_open(options.c_str(), O_CREAT, 0644, 0);
 	}
 
 	// Initialize Pipe for passing data back to main program
@@ -200,7 +199,7 @@ int SCOPE::create_process(std::string exeName, std::string semName, sem_t **sem,
 		}
 		pipeout = strdup(std::to_string(filedes[1]).c_str());
 	}
-	char *const command[4] = {exe, options, pipeout, NULL};
+	char *const command[4] = {exe, cmd, pipeout, NULL};
 
 	if(!(pid = Fork())) {
 		printf("%s\n", exeName.c_str());
@@ -208,7 +207,6 @@ int SCOPE::create_process(std::string exeName, std::string semName, sem_t **sem,
 			printf("failure\n");
 		}
 	}
-	delete[] options;
 	return 0;
 }
 
